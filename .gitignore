@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+*.env.local
+
+# dbt
+target/
+dbt_packages/
+dbt.log
+logs/
+.user.yml
+
+# Snowflake private key
+*.p8
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

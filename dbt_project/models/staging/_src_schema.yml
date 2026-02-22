@@ -1,0 +1,53 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+    schema: RAW
+    loaded_at_field: _loaded_at
+    freshness:
+      warn_after:  {count: 25, period: hour}
+      error_after: {count: 49, period: hour}
+    tables:
+      - name: RAW_HOUSING_PRICES
+        description: Raw housing price data from DST table EJEN12.
+      - name: RAW_UNEMPLOYMENT
+        description: Raw unemployment data from DST table AUL01.
+      - name: RAW_EARNINGS
+        description: Raw earnings data from DST table LONS10.
+
+models:
+  - name: src_housing_prices
+    description: Staged housing prices with renamed columns and cast types.
+    columns:
+      - name: housing_price_id
+        tests: [unique, not_null]
+      - name: municipality_code
+        tests: [not_null]
+      - name: period_date
+        tests: [not_null]
+      - name: price_value
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+
+  - name: src_unemployment
+    description: Staged unemployment figures per municipality and period.
+    columns:
+      - name: unemployment_id
+        tests: [unique, not_null]
+      - name: municipality_code
+        tests: [not_null]
+      - name: period_date
+        tests: [not_null]
+
+  - name: src_earnings
+    description: Staged average monthly earnings per industry and period.
+    columns:
+      - name: earnings_id
+        tests: [unique, not_null]
+      - name: industry_code
+        tests: [not_null]
+      - name: period_date
+        tests: [not_null]

@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: dim_municipalities
+    description: Dimension table of Danish municipalities with region mappings from seed.
+    columns:
+      - name: municipality_code
+        tests: [unique, not_null]
+      - name: municipality_name
+        tests: [not_null]
+      - name: region_name
+        tests: [not_null]
+
+  - name: fct_housing_transactions
+    description: >
+      Incremental fact table of housing price observations per municipality and period,
+      enriched with region information from dim_municipalities.
+    columns:
+      - name: housing_price_id
+        tests: [unique, not_null]
+      - name: municipality_code
+        tests: [not_null]
+      - name: period_date
+        tests: [not_null]
+      - name: price_value
+        tests: [not_null]
+
+  - name: fct_labour_market
+    description: >
+      Incremental fact table joining unemployment counts and average earnings per
+      municipality and period.
+    columns:
+      - name: labour_id
+        tests: [unique, not_null]
+      - name: period_date
+        tests: [not_null]

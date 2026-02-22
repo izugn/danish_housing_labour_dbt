@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: mart_housing_affordability
+    description: >
+      Municipality-level view combining housing prices and labour market metrics,
+      including a price-to-income affordability ratio and YoY price change.
+    columns:
+      - name: municipality_code
+        tests: [not_null]
+      - name: period_date
+        tests: [not_null]
+      - name: avg_house_price_dkk
+        tests: [not_null]
+      - name: price_to_income_ratio
+        description: House price as a multiple of annual gross earnings.
+
+  - name: mart_labour_housing_correlation
+    description: >
+      Region-level aggregation correlating labour market conditions with housing
+      affordability, including an affordability tier classification.
+    columns:
+      - name: region_name
+        tests: [not_null]
+      - name: period_date
+        tests: [not_null]
+      - name: affordability_tier
+        tests:
+          - accepted_values:
+              values: ['HIGH_UNAFFORDABILITY', 'MODERATE_UNAFFORDABILITY', 'AFFORDABLE']

@@ -1,0 +1,40 @@
+name: danish_housing_labour
+version: '1.0.0'
+config-version: 2
+
+profile: danish_housing_labour
+
+model-paths:    ["models"]
+analysis-paths:  ["analyses"]
+test-paths:      ["tests"]
+seed-paths:      ["seeds"]
+macro-paths:     ["macros"]
+snapshot-paths:  ["snapshots"]
+docs-paths:      ["docs"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  danish_housing_labour:
+    staging:
+      +materialized: view
+      +schema: staging
+    core:
+      +materialized: incremental
+      +schema: core
+    marts:
+      +materialized: view
+      +schema: marts
+
+seeds:
+  danish_housing_labour:
+    +schema: seeds
+
+snapshots:
+  danish_housing_labour:
+    +target_schema: snapshots
+    +strategy: check
+    +invalidate_hard_deletes: true
