@@ -36,6 +36,11 @@ from pathlib import Path
 import requests
 from requests import HTTPError
 
+import ssl
+print(ssl.OPENSSL_VERSION)      # e.g. OpenSSL 3.x.x
+print("TLSv1.2:", ssl.HAS_TLSv1_2)         # True
+print("TLSv1.3:", ssl.HAS_TLSv1_3)         # True (on modern installs)
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
