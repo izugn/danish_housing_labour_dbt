@@ -17,8 +17,7 @@ TABLES: list[TableConfig] = [
         table_id="EJEN12",
         snowflake_table="RAW_HOUSING_PRICES",
         variables=[
-            {"code": "OMRÅDE", "values": ["*"]},   # municipality
-            {"code": "ENHED",  "values": ["*"]},   # unit (price per m², etc.)
+            {"code": "EJENDOMSKATE", "values": ["*"]},  # required by API
             {"code": "Tid",    "values": ["*"]},   # time period
         ],
     ),
@@ -26,6 +25,7 @@ TABLES: list[TableConfig] = [
         table_id="AUL01",
         snowflake_table="RAW_UNEMPLOYMENT",
         variables=[
+            {"code": "YDELSESTYPE", "values": ["*"]},  # required by API
             {"code": "OMRÅDE", "values": ["*"]},
             {"code": "Tid",    "values": ["*"]},
         ],
@@ -34,7 +34,7 @@ TABLES: list[TableConfig] = [
         table_id="LONS10",
         snowflake_table="RAW_EARNINGS",
         variables=[
-            {"code": "BRANCHE", "values": ["*"]},  # industry
+            {"code": "LØNMÅL",   "values": ["*"]},  # required by API
             {"code": "Tid",     "values": ["*"]},
         ],
     ),
