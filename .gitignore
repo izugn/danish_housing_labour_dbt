@@ -30,3 +30,6 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local data exploration outputs
+data_exploration/data_sample/
