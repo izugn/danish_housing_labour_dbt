@@ -9,6 +9,10 @@ Tables fetched:
   - EJEN12  -> ejen12_housing_prices.csv    (property sale prices per m²)
   - AUL01   -> aul01_unemployment.csv       (registered unemployment by area)
   - LONS10  -> lons10_earnings.csv          (average monthly earnings by industry)
+  - EJEN77  -> ejen77.csv                  (EJEN77 sample data)
+  - EJ56    -> ej56.csv                    (EJ56 sample data)
+  - LABY22  -> laby22.csv                  (LABY22 sample data)
+  - EJ131   -> ej131.csv                   (EJ131 sample data)
 
 Dependencies: requests  (already listed in ingestion/requirements.txt)
 
@@ -78,6 +82,38 @@ TABLES = [
         "variables": [
             {"code": "LØNMÅL", "values": ["*"]},
             {"code": "Tid", "values": None},
+        ],
+    },
+    {
+        "table_id": "EJEN77",
+        "filename": "ejen77.csv",
+        "description": "EJEN77 sample data",
+        "variables": [
+            {"code": "Tid", "values": None},   # filled in at runtime
+        ],
+    },
+    {
+        "table_id": "EJ56",
+        "filename": "ej56.csv",
+        "description": "EJ56 sample data",
+        "variables": [
+            {"code": "Tid", "values": None},   # filled in at runtime
+        ],
+    },
+    {
+        "table_id": "LABY22",
+        "filename": "laby22.csv",
+        "description": "LABY22 sample data",
+        "variables": [
+            {"code": "Tid", "values": None},   # filled in at runtime
+        ],
+    },
+    {
+        "table_id": "EJ131",
+        "filename": "ej131.csv",
+        "description": "EJ131 sample data",
+        "variables": [
+            {"code": "Tid", "values": None},   # filled in at runtime
         ],
     },
 ]
