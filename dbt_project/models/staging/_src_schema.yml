@@ -13,8 +13,18 @@ sources:
         description: Raw housing price data from DST table EJEN12.
       - name: RAW_UNEMPLOYMENT
         description: Raw unemployment data from DST table AUL01.
-      - name: RAW_EARNINGS
-        description: Raw earnings data from DST table LONS10.
+      - name: RAW_NATIONAL_EARNINGS
+        description: Raw national earnings data from DST table LONS10.
+      - name: RAW_LOCAL_INCOME
+        description: >
+          Raw personal income data from DST table INDKP101.
+          Annual, municipality-level. Contains average disposable income,
+          taxable income, and wage income per municipality from 2013 onward.
+      - name: RAW_HOUSING_NATIONAL
+        description: >
+          Raw national property sales key figures from DST table LABY22.
+          Annual. Contains average price per m², average property price,
+          share of first-time buyers, and buyer age from 2013 onward.
 
 models:
   - name: src_housing_prices
@@ -51,3 +61,41 @@ models:
         tests: [not_null]
       - name: period_date
         tests: [not_null]
+
+  - name: src_local_income
+    description: >
+      Staged municipality-level personal income. Filtered to
+      ENHED = 'Average income for all people (DKK)' and
+      INDKOMSTTYPE = 'Taxable income'. One row per municipality per year.
+    columns:
+      - name: income_id
+        tests: [unique, not_null]
+      - name: municipality_name
+        tests: [not_null]
+      - name: period_year
+        tests: [not_null]
+      - name: avg_income_dkk
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2000000
+
+  - name: src_housing_national
+    description: >
+      Staged national housing key figures from LABY22.
+      Pivoted so each BNØGLE metric becomes its own column.
+      Filtered to EJENDOMSKATE = 'One-family houses'.
+    columns:
+      - name: housing_national_id
+        tests: [unique, not_null]
+      - name: property_category
+        tests: [not_null]
+      - name: period_year
+        tests: [not_null]
+      - name: avg_price_per_sqm_dkk
+        description: Average price per square meter per property (DKK).
+      - name: avg_property_price_dkk_1000
+        description: Average price per property in DKK thousands.
+      - name: share_first_time_buyers_pct
+        description: Share of first-time buyers in percent.

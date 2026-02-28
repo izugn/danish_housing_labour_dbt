@@ -60,23 +60,31 @@ cd dbt_project && dbt parse
 
 ## Data Sources
 
-| DST Table | Description                          | Snowflake Raw Table    |
-|-----------|--------------------------------------|------------------------|
-| EJEN12    | Property sale prices per m²          | `RAW_HOUSING_PRICES`   |
-| AUL01     | Registered unemployment by area      | `RAW_UNEMPLOYMENT`     |
-| LONS10    | Average monthly earnings by industry | `RAW_EARNINGS`         |
+| DST Table | Description                                     | Snowflake Raw Table      | Frequency  |
+|-----------|-------------------------------------------------|--------------------------|------------|
+| EJEN12    | Property sale prices per m² by municipality    | `RAW_HOUSING_PRICES`     | Quarterly  |
+| AUL01     | Registered unemployment by municipality         | `RAW_UNEMPLOYMENT`       | Annual     |
+| INDKP101  | Personal income by municipality                 | `RAW_LOCAL_INCOME`       | Annual     |
+| LONS10    | Average monthly earnings by industry (national) | `RAW_NATIONAL_EARNINGS`  | Annual     |
+| LABY22    | Key figures for property sales (national)       | `RAW_HOUSING_NATIONAL`   | Annual     |
+
+> Note: EJEN12 is quarterly; all other core tables are annual. The staging
+> layer aggregates EJEN12 quarters to calendar-year averages using the
+> `period_year` column before joining with unemployment and income data.
 
 ---
 
 ## Key Models
 
-| Model                            | Layer   | Description                                      |
-|----------------------------------|---------|--------------------------------------------------|
-| `src_housing_prices`             | Staging | Cast + renamed housing price rows                |
-| `src_unemployment`               | Staging | Cast + renamed unemployment rows                 |
-| `src_earnings`                   | Staging | Cast + renamed earnings rows                     |
-| `dim_municipalities`             | Core    | Municipality ↔ region mapping (from seed)        |
-| `fct_housing_transactions`       | Core    | Incremental housing prices enriched with region  |
-| `fct_labour_market`              | Core    | Incremental unemployment + earnings per period   |
-| `mart_housing_affordability`     | Marts   | Price-to-income ratio per municipality           |
-| `mart_labour_housing_correlation`| Marts   | Regional affordability tiers                     |
+| Model                            | Layer   | Description                                              |
+|----------------------------------|---------|----------------------------------------------------------|
+| `src_housing_prices`             | Staging | Cast + renamed housing price rows                        |
+| `src_unemployment`               | Staging | Cast + renamed unemployment rows                         |
+| `src_earnings`                   | Staging | Cast + renamed earnings rows                             |
+| `src_local_income`               | Staging | Cast + renamed INDKP101 rows (municipality income)       |
+| `src_housing_national`           | Staging | Cast + renamed LABY22 rows (national annual trends)      |
+| `dim_municipalities`             | Core    | Municipality ↔ region mapping (from seed)               |
+| `fct_housing_transactions`       | Core    | Incremental housing prices enriched with region          |
+| `fct_labour_market`              | Core    | Incremental unemployment + earnings per period           |
+| `mart_housing_affordability`     | Marts   | Price-to-income ratio per municipality                   |
+| `mart_labour_housing_correlation`| Marts   | Regional affordability tiers                             |
