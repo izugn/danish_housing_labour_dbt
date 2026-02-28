@@ -6,13 +6,14 @@ and writes them as semicolon-delimited CSV files, alongside a JSON metadata
 file for each table.
 
 Tables fetched:
-  - EJEN12  -> ejen12_housing_prices.csv    (property sale prices per m²)
-  - AUL01   -> aul01_unemployment.csv       (registered unemployment by area)
-  - LONS10  -> lons10_earnings.csv          (average monthly earnings by industry)
-  - EJEN77  -> ejen77.csv                  (EJEN77 sample data)
-  - EJ56    -> ej56.csv                    (EJ56 sample data)
-  - LABY22  -> laby22.csv                  (LABY22 sample data)
-  - EJ131   -> ej131.csv                   (EJ131 sample data)
+  - EJEN12    -> ejen12_housing_prices.csv    (property sale prices per m²)
+  - AUL01     -> aul01_unemployment.csv       (registered unemployment by area)
+  - LONS10    -> lons10_earnings.csv          (average monthly earnings by industry)
+  - EJEN77    -> ejen77.csv                  (EJEN77 sample data)
+  - EJ56      -> ej56.csv                    (EJ56 sample data)
+  - LABY22    -> laby22.csv                  (LABY22 sample data)
+  - EJ131     -> ej131.csv                   (EJ131 sample data)
+  - INDKP101  -> indkp101.csv               (personal income by municipality)
 
 Dependencies: requests  (already listed in ingestion/requirements.txt)
 
@@ -83,6 +84,16 @@ TABLES: list[TableConfig] = [
     TableConfig("EJ56",   "ej56.csv",   "EJ56 sample data",   [{"code": "Tid", "values": None}]),
     TableConfig("LABY22", "laby22.csv", "LABY22 sample data", [{"code": "Tid", "values": None}]),
     TableConfig("EJ131",  "ej131.csv",  "EJ131 sample data",  [{"code": "Tid", "values": None}]),
+    TableConfig(
+        "INDKP101", "indkp101.csv", "Personal income by municipality",
+        [
+            {"code": "OMRÅDE",       "values": ["*"]},           # all 98 municipalities + aggregates
+            {"code": "ENHED",        "values": ["110", "116"]},  # income amount (DKK 1000) + avg for all (DKK)
+            {"code": "INDKOMSTTYPE", "values": ["100", "115", "290"]},  # disposable, wages & salaries, taxable
+            {"code": "Tid",          "values": None},             # resolved via --periods / --all-periods
+            # KOEN (sex) is eliminable → skipped → DST returns men+women total
+        ],
+    ),
 ]
 
 
