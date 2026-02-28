@@ -33,17 +33,21 @@ Usage:
 import argparse
 import csv
 import json
+import logging
 import sys
+from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path
 
 import requests
 from requests import HTTPError
 
-import ssl
-print(ssl.OPENSSL_VERSION)      # e.g. OpenSSL 3.x.x
-print("TLSv1.2:", ssl.HAS_TLSv1_2)         # True
-print("TLSv1.3:", ssl.HAS_TLSv1_3)         # True (on modern installs)
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+logging.basicConfig(format="%(message)s", level=logging.INFO)
+log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -55,67 +59,30 @@ OUTPUT_DIR = Path(__file__).parent / "data_sample"
 # Cell count threshold at which we warn the user (hard limit is 1,000,000)
 CELL_COUNT_WARNING_THRESHOLD = 500_000
 
-TABLES = [
-    {
-        "table_id": "EJEN12",
-        "filename": "ejen12_housing_prices.csv",
-        "description": "Property sale prices per m²",
-        "variables": [
-            {"code": "EJENDOMSKATE", "values": ["*"]},
-            {"code": "Tid", "values": None},   # filled in at runtime
-        ],
-    },
-    {
-        "table_id": "AUL01",
-        "filename": "aul01_unemployment.csv",
-        "description": "Registered unemployment by area",
-        "variables": [
-            {"code": "YDELSESTYPE", "values": ["*"]},
-            {"code": "OMRÅDE", "values": ["*"]},
-            {"code": "Tid", "values": None},
-        ],
-    },
-    {
-        "table_id": "LONS10",
-        "filename": "lons10_earnings.csv",
-        "description": "Average monthly earnings by industry",
-        "variables": [
-            {"code": "LØNMÅL", "values": ["*"]},
-            {"code": "Tid", "values": None},
-        ],
-    },
-    {
-        "table_id": "EJEN77",
-        "filename": "ejen77.csv",
-        "description": "EJEN77 sample data",
-        "variables": [
-            {"code": "Tid", "values": None},   # filled in at runtime
-        ],
-    },
-    {
-        "table_id": "EJ56",
-        "filename": "ej56.csv",
-        "description": "EJ56 sample data",
-        "variables": [
-            {"code": "Tid", "values": None},   # filled in at runtime
-        ],
-    },
-    {
-        "table_id": "LABY22",
-        "filename": "laby22.csv",
-        "description": "LABY22 sample data",
-        "variables": [
-            {"code": "Tid", "values": None},   # filled in at runtime
-        ],
-    },
-    {
-        "table_id": "EJ131",
-        "filename": "ej131.csv",
-        "description": "EJ131 sample data",
-        "variables": [
-            {"code": "Tid", "values": None},   # filled in at runtime
-        ],
-    },
+
+# ---------------------------------------------------------------------------
+# Table configuration
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TableConfig:
+    table_id: str
+    filename: str
+    description: str
+    variables: list[dict] = field(default_factory=list)
+
+
+TABLES: list[TableConfig] = [
+    TableConfig("EJEN12", "ejen12_housing_prices.csv", "Property sale prices per m²",
+                [{"code": "EJENDOMSKATE", "values": ["*"]}, {"code": "Tid", "values": None}]),
+    TableConfig("AUL01", "aul01_unemployment.csv", "Registered unemployment by area",
+                [{"code": "YDELSESTYPE", "values": ["*"]}, {"code": "OMRÅDE", "values": ["*"]}, {"code": "Tid", "values": None}]),
+    TableConfig("LONS10", "lons10_earnings.csv", "Average monthly earnings by industry",
+                [{"code": "LØNMÅL", "values": ["*"]}, {"code": "Tid", "values": None}]),
+    TableConfig("EJEN77", "ejen77.csv", "EJEN77 sample data", [{"code": "Tid", "values": None}]),
+    TableConfig("EJ56",   "ej56.csv",   "EJ56 sample data",   [{"code": "Tid", "values": None}]),
+    TableConfig("LABY22", "laby22.csv", "LABY22 sample data", [{"code": "Tid", "values": None}]),
+    TableConfig("EJ131",  "ej131.csv",  "EJ131 sample data",  [{"code": "Tid", "values": None}]),
 ]
 
 
@@ -124,47 +91,32 @@ TABLES = [
 # ---------------------------------------------------------------------------
 
 
-def post_json(endpoint: str, payload: dict) -> dict | list:
-    """POST a JSON payload to a DST API endpoint and return parsed JSON."""
+def _dst_post(endpoint: str, payload: dict, *, as_text: bool = False) -> dict | list | str:
+    """POST to a DST API endpoint; return parsed JSON or raw text."""
     url = f"{DST_API_BASE}/{endpoint}"
-    response = requests.post(url, json={**payload, "lang": "en", "format": "JSON"}, timeout=60)
+    response = requests.post(url, json={"lang": "en", **payload}, timeout=120)
     try:
         response.raise_for_status()
     except HTTPError as exc:
         raise HTTPError(
             f"{exc} | URL: {url} | Response: {response.text[:400]}", response=response
         ) from exc
-    return response.json()
+    return response.text if as_text else response.json()
 
 
 def fetch_table_metadata(table_id: str) -> dict:
-    """
-    Fetch full table metadata via POST to /tableinfo.
-
-    Returns a dict with keys: id, text, unit, updated, variables (list).
-    Each variable has: id, text, elimination, values (list of {id, text}).
-    """
-    return post_json("tableinfo", {"table": table_id})
+    """Fetch full table metadata via POST to /tableinfo."""
+    return _dst_post("tableinfo", {"table": table_id, "format": "JSON"})
 
 
 def fetch_table_csv(table_id: str, variables: list[dict]) -> str:
     """POST to /data and return raw CSV text (semicolon-separated)."""
-    url = f"{DST_API_BASE}/data"
-    payload = {
+    return _dst_post("data", {
         "table": table_id,
         "format": "CSV",
-        "lang": "en",
         "timeOrder": "Ascending",
         "variables": variables,
-    }
-    response = requests.post(url, json=payload, timeout=120)
-    try:
-        response.raise_for_status()
-    except HTTPError as exc:
-        raise HTTPError(
-            f"{exc} | Response: {response.text[:400]}", response=response
-        ) from exc
-    return response.text
+    }, as_text=True)
 
 
 # ---------------------------------------------------------------------------
@@ -173,99 +125,63 @@ def fetch_table_csv(table_id: str, variables: list[dict]) -> str:
 
 
 def pick_last_n_periods(time_values: list[dict], n_periods: int | None) -> list[str]:
-    """
-    Return the last n_periods values from the metadata time variable.
-
-    - n_periods=None → all periods ("*")
-    - n_periods=N    → the last N actual period IDs from the metadata list
-    """
-    if n_periods is None:
-        return ["*"]
-    return [v["id"] for v in time_values[-n_periods:]]
+    """Return the last n_periods IDs, or ["*"] for all."""
+    return ["*"] if n_periods is None else [v["id"] for v in time_values[-n_periods:]]
 
 
 def resolve_variables(
     metadata: dict,
     configured: list[dict],
     n_periods: int | None,
-) -> list[dict]:
+) -> tuple[list[dict], list[str]]:
     """
     Merge user-configured variable selections with table metadata.
 
-    Rules:
-    - If a variable is in `configured` with explicit values → use them.
-    - If a variable has code "Tid" → use period selector.
-    - If a variable is eliminable → skip it (DST will aggregate automatically).
-    - If a variable is NOT eliminable and not configured → select ALL values ("*")
-      and print a warning so the user knows.
-
-    Returns a list of {"code": ..., "values": [...]} dicts ready for the API.
+    Returns (resolved_variables, warning_messages).
     """
     configured_by_code = {
         v["code"].upper(): v["values"]
         for v in configured
         if v.get("values") is not None
     }
-    resolved = []
+    resolved: list[dict] = []
+    warnings: list[str] = []
 
     for var in metadata.get("variables", []):
         code = var["id"].upper()
-        is_time = var.get("time", False)
-        eliminable = var.get("elimination", False)
 
-        # Time variable — derive last N from actual period values in metadata
-        if is_time:
-            period_values = pick_last_n_periods(var.get("values", []), n_periods)
-            resolved.append({"code": var["id"], "values": period_values})
-            continue
-
-        # Explicitly configured variable
-        if code in configured_by_code:
+        if var.get("time"):
+            resolved.append({"code": var["id"], "values": pick_last_n_periods(var.get("values", []), n_periods)})
+        elif code in configured_by_code:
             resolved.append({"code": var["id"], "values": configured_by_code[code]})
+        elif var.get("elimination"):
             continue
+        else:
+            warnings.append(
+                f"Variable '{var['id']}' ({var.get('text', '')}) is required "
+                f"but not configured — selecting all {len(var.get('values', []))} values."
+            )
+            resolved.append({"code": var["id"], "values": ["*"]})
 
-        # Eliminable variables we haven't configured → skip (DST aggregates)
-        if eliminable:
-            continue
-
-        # Required, not configured → select all values and warn
-        print(
-            f"  ⚠  Variable '{var['id']}' ({var.get('text', '')}) is required "
-            f"but not configured — selecting all {len(var.get('values', []))} values."
-        )
-        resolved.append({"code": var["id"], "values": ["*"]})
-
-    return resolved
+    return resolved, warnings
 
 
 def estimate_cell_count(metadata: dict, variables: list[dict]) -> int:
-    """
-    Rough cell-count estimate: rows × (n_variables + 1 for INDHOLD).
-    DST counts each column (including the value column) as a cell.
-    """
-    value_counts = []
+    """Rough cell-count estimate: rows × (n_variables + 1 for INDHOLD)."""
     var_lookup = {v["id"].upper(): v for v in metadata.get("variables", [])}
-
+    value_counts = []
     for req_var in variables:
-        code = req_var["code"].upper()
-        meta_var = var_lookup.get(code, {})
-        total_values = len(meta_var.get("values", []))
+        meta_var = var_lookup.get(req_var["code"].upper(), {})
+        total = len(meta_var.get("values", []))
         selected = req_var["values"]
-
-        if selected == ["*"]:
-            value_counts.append(total_values)
-        else:
-            # explicit list of period IDs (or any other values)
-            value_counts.append(min(len(selected), total_values))
+        value_counts.append(total if selected == ["*"] else min(len(selected), total))
 
     if not value_counts:
         return 0
-
-    n_columns = len(value_counts) + 1  # +1 for INDHOLD (the value column)
     rows = 1
     for vc in value_counts:
         rows *= max(vc, 1)
-    return rows * n_columns
+    return rows * (len(value_counts) + 1)
 
 
 # ---------------------------------------------------------------------------
@@ -301,25 +217,22 @@ def save_metadata(metadata: dict, out_path: Path) -> None:
     }
     meta_path = out_path.with_suffix(".meta.json")
     meta_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"     Metadata → {meta_path.name}")
+    log.info("     Metadata → %s", meta_path.name)
 
 
-def parse_and_save_csv(raw_text: str, out_path: Path) -> tuple[int, int]:
-    """Parse raw CSV text, normalise headers, write to file. Returns (total_rows, saved_rows)."""
+def parse_and_save_csv(raw_text: str, out_path: Path) -> int:
+    """Parse raw CSV text, normalise headers, write to file. Returns row count."""
     reader = csv.reader(StringIO(raw_text), delimiter=";")
-    rows = list(reader)
-    if not rows:
-        return 0, 0
-
-    header = [normalise_header(col) for col in rows[0]]
-    data_rows = rows[1:]
-
+    rows_written = 0
     with open(out_path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh, delimiter=";")
-        writer.writerow(header)
-        writer.writerows(data_rows)
-
-    return len(data_rows), len(data_rows)
+        for i, row in enumerate(reader):
+            if i == 0:
+                writer.writerow([normalise_header(col) for col in row])
+            else:
+                writer.writerow(row)
+                rows_written += 1
+    return rows_written
 
 
 # ---------------------------------------------------------------------------
@@ -329,33 +242,28 @@ def parse_and_save_csv(raw_text: str, out_path: Path) -> tuple[int, int]:
 
 def explore_table(table_id: str) -> None:
     """Print a detailed variable/value breakdown for a table."""
-    print(f"\n{'='*60}")
-    print(f"  Exploring table: {table_id.upper()}")
-    print(f"{'='*60}")
+    log.info("\n%s", "=" * 60)
+    log.info("  Exploring table: %s", table_id.upper())
+    log.info("%s\n", "=" * 60)
 
     meta = fetch_table_metadata(table_id.upper())
-    print(f"  Title      : {meta.get('text')}")
-    print(f"  Unit       : {meta.get('unit')}")
-    print(f"  Updated    : {meta.get('updated')}")
-    print(f"  Contact    : {', '.join(c.get('mail', '') for c in meta.get('contacts', []))}")
-    print()
+    log.info("  Title      : %s", meta.get("text"))
+    log.info("  Unit       : %s", meta.get("unit"))
+    log.info("  Updated    : %s", meta.get("updated"))
+    log.info("  Contact    : %s\n", ", ".join(c.get("mail", "") for c in meta.get("contacts", [])))
 
     for var in meta.get("variables", []):
         values = var.get("values", [])
-        flags = []
-        if var.get("time"):
-            flags.append("TIME")
-        if var.get("elimination"):
-            flags.append("ELIMINABLE")
+        flags = (["TIME"] if var.get("time") else []) + (["ELIMINABLE"] if var.get("elimination") else [])
         flag_str = f"  [{', '.join(flags)}]" if flags else ""
 
-        print(f"  Variable: {var['id']} — {var.get('text')}{flag_str}")
-        print(f"    Total values: {len(values)}")
+        log.info("  Variable: %s — %s%s", var["id"], var.get("text"), flag_str)
+        log.info("    Total values: %d", len(values))
         for v in values[:8]:
-            print(f"      {v['id']:>10}  {v.get('text', '')}")
+            log.info("      %10s  %s", v["id"], v.get("text", ""))
         if len(values) > 8:
-            print(f"      ... and {len(values) - 8} more")
-        print()
+            log.info("      ... and %d more", len(values) - 8)
+        log.info("")
 
 
 # ---------------------------------------------------------------------------
@@ -373,65 +281,67 @@ def main(n_periods: int | None = 12, all_periods: bool = False, explore: str | N
     period_label = "all periods" if effective_periods is None else f"last {effective_periods} periods"
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"\nDST Data Exploration — fetching {period_label}\n")
+    log.info("\nDST Data Exploration — fetching %s\n", period_label)
 
     results_summary = []
 
     for table in TABLES:
-        tid = table["table_id"]
-        out_path = OUTPUT_DIR / table["filename"]
+        tid = table.table_id
+        out_path = OUTPUT_DIR / table.filename
 
-        print(f"{'─'*50}")
-        print(f"  Table   : {tid} — {table['description']}")
+        log.info("%s", "─" * 50)
+        log.info("  Table   : %s — %s", tid, table.description)
 
         # 1. Fetch metadata
-        print(f"  Fetching metadata ...", end=" ", flush=True)
+        log.info("  Fetching metadata ...")
         meta = fetch_table_metadata(tid)
-        print(f"✓  (updated: {meta.get('updated', 'unknown')})")
-        print(f"  Title   : {meta.get('text')}")
-        print(f"  Unit    : {meta.get('unit')}")
+        log.info("  ✓  (updated: %s)", meta.get("updated", "unknown"))
+        log.info("  Title   : %s", meta.get("text"))
+        log.info("  Unit    : %s", meta.get("unit"))
 
         # 2. Resolve variables
-        resolved = resolve_variables(meta, table["variables"], effective_periods)
-        print(f"  Variables selected:")
+        resolved, warnings = resolve_variables(meta, table.variables, effective_periods)
+        for w in warnings:
+            log.warning("  ⚠  %s", w)
+        log.info("  Variables selected:")
         for v in resolved:
-            print(f"    {v['code']:>15} = {v['values']}")
+            log.info("    %15s = %s", v["code"], v["values"])
 
         # 3. Estimate cell count and warn if large
         est_cells = estimate_cell_count(meta, resolved)
         if est_cells > CELL_COUNT_WARNING_THRESHOLD:
-            print(
-                f"  ⚠  Estimated cell count: {est_cells:,} "
-                f"(DST hard limit: 1,000,000). Consider reducing --periods."
+            log.warning(
+                "  ⚠  Estimated cell count: %s (DST hard limit: 1,000,000). Consider reducing --periods.",
+                f"{est_cells:,}",
             )
         else:
-            print(f"  Estimated cells: ~{est_cells:,}")
+            log.info("  Estimated cells: ~%s", f"{est_cells:,}")
 
         # 4. Fetch data
-        print(f"  Fetching data ...", end=" ", flush=True)
+        log.info("  Fetching data ...")
         try:
             raw_text = fetch_table_csv(tid, resolved)
         except HTTPError as exc:
-            print(f"\n  ERROR: {exc}")
+            log.error("  ERROR: %s", exc)
             results_summary.append({"table": tid, "status": "ERROR", "rows": 0})
             continue
 
         # 5. Parse and save
-        total_rows, saved_rows = parse_and_save_csv(raw_text, out_path)
-        print(f"✓  {total_rows:,} rows")
-        print(f"     Data     → {out_path.name}")
+        rows = parse_and_save_csv(raw_text, out_path)
+        log.info("  ✓  %s rows", f"{rows:,}")
+        log.info("     Data     → %s", out_path.name)
         save_metadata(meta, out_path)
 
-        results_summary.append({"table": tid, "status": "OK", "rows": saved_rows})
+        results_summary.append({"table": tid, "status": "OK", "rows": rows})
 
     # Final summary
-    print(f"\n{'='*50}")
-    print("  SUMMARY")
-    print(f"{'='*50}")
+    log.info("\n%s", "=" * 50)
+    log.info("  SUMMARY")
+    log.info("%s", "=" * 50)
     for r in results_summary:
-        status_icon = "✓" if r["status"] == "OK" else "✗"
-        print(f"  {status_icon}  {r['table']:8}  {r['rows']:>8,} rows   [{r['status']}]")
-    print(f"\n  Output directory: {OUTPUT_DIR}\n")
+        icon = "✓" if r["status"] == "OK" else "✗"
+        log.info("  %s  %-8s  %8s rows   [%s]", icon, r["table"], f"{r['rows']:,}", r["status"])
+    log.info("\n  Output directory: %s\n", OUTPUT_DIR)
 
 
 # ---------------------------------------------------------------------------
@@ -443,20 +353,15 @@ if __name__ == "__main__":
         description="Fetch sample data from the Statistics Denmark (DST) StatBank API."
     )
     parser.add_argument(
-        "--periods",
-        type=int,
-        default=12,
-        metavar="N",
+        "--periods", type=int, default=12, metavar="N",
         help="Number of recent time periods to fetch per table (default: 12).",
     )
     parser.add_argument(
-        "--all-periods",
-        action="store_true",
+        "--all-periods", action="store_true",
         help="Fetch all available periods (ignores --periods). May be large.",
     )
     parser.add_argument(
-        "--explore",
-        metavar="TABLE_ID",
+        "--explore", metavar="TABLE_ID",
         help="Print a detailed variable/value breakdown for a table and exit.",
     )
     args = parser.parse_args()
