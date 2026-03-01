@@ -11,6 +11,7 @@ env/
 # Environment variables
 .env
 *.env.local
+# ingestion/.env is already ignored, but this is a catch-all for any other .env files that might be added in the future
 
 # dbt
 target/
