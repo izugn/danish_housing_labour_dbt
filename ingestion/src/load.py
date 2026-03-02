@@ -5,14 +5,32 @@ import os
 
 import pandas as pd
 import snowflake.connector
+from cryptography.hazmat.primitives import serialization
 from snowflake.connector.pandas_tools import write_pandas
 
 
 def _get_connection() -> snowflake.connector.SnowflakeConnection:
+    private_key_path = os.environ["SNOWFLAKE_PRIVATE_KEY_PATH"]
+    private_key_passphrase = os.environ["SNOWFLAKE_PRIVATE_KEY_PASSPHRASE"]
+
+    with open(private_key_path, "rb") as key_file:
+        private_key_data = key_file.read()
+
+    private_key = serialization.load_pem_private_key(
+        private_key_data,
+        password=private_key_passphrase.encode(),
+    )
+
+    private_key_der = private_key.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+
     return snowflake.connector.connect(
         account=os.environ["SNOWFLAKE_ACCOUNT"],
         user=os.environ["SNOWFLAKE_USER"],
-        password=os.environ["SNOWFLAKE_PASSWORD"],
+        private_key=private_key_der,
         warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
         database=os.environ["SNOWFLAKE_DATABASE"],
         schema=os.environ["SNOWFLAKE_SCHEMA"],

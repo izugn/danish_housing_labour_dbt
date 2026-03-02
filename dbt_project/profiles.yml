@@ -3,24 +3,26 @@ danish_housing_labour:
   outputs:
     dev:
       type: snowflake
-      account:   "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
-      user:      "{{ env_var('SNOWFLAKE_USER') }}"
-      password:  "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      account:   "{{ env_var('SNOWFLAKE_ACCOUNT', 'YOUR_SNOWFLAKE_ACCOUNT') }}"
+      user:      "{{ env_var('SNOWFLAKE_USER', 'YOUR_SNOWFLAKE_USER') }}"
+      private_key_path:       "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH', '/Users/illeszugn/.snowflake/rsa_key.p8') }}"
+      private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', 'REDACTED') }}"
       role:      "{{ env_var('SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
-      database:  "{{ env_var('SNOWFLAKE_DATABASE') }}"
-      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      database:  "{{ env_var('SNOWFLAKE_DATABASE', 'DANISH_HOUSING') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'DANISH_HOUSING_WH') }}"
       schema: dbt_dev
       threads: 4
       client_session_keep_alive: false
 
     prod:
       type: snowflake
-      account:   "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
-      user:      "{{ env_var('SNOWFLAKE_USER') }}"
-      password:  "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      account:   "{{ env_var('SNOWFLAKE_ACCOUNT', 'YOUR_SNOWFLAKE_ACCOUNT') }}"
+      user:      "{{ env_var('SNOWFLAKE_USER', 'YOUR_SNOWFLAKE_USER') }}"
+      private_key_path:       "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH', '/Users/illeszugn/.snowflake/rsa_key.p8') }}"
+      private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', 'REDACTED') }}"
       role:      "{{ env_var('SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
-      database:  "{{ env_var('SNOWFLAKE_DATABASE') }}"
-      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      database:  "{{ env_var('SNOWFLAKE_DATABASE', 'DANISH_HOUSING') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'DANISH_HOUSING_WH') }}"
       schema: analytics
       threads: 8
       client_session_keep_alive: false
