@@ -82,6 +82,7 @@ def load_dataframe(df: pd.DataFrame, table_name: str, overwrite: bool = False) -
             table_name=table_name.upper(),
             auto_create_table=True,
             overwrite=overwrite,
+            use_logical_type=True,
         )
         if not success:
             raise RuntimeError(

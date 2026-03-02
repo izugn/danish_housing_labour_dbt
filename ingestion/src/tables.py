@@ -11,17 +11,21 @@ class TableConfig:
     snowflake_table: str  # Target Snowflake raw table name
     variables: list[dict] # List of {"code": ..., "values": [...]} dicts
     description: str = field(default="")
+    # If the full request would exceed the DST 1 M-cell limit, set chunk_variable
+    # to a variable code (e.g. "Tid") and chunk_size to values per sub-request.
+    chunk_variable: str | None = field(default=None)
+    chunk_size: int = field(default=10)
 
 
 TABLES: list[TableConfig] = [
     TableConfig(
         table_id="EJEN12",
         snowflake_table="RAW_HOUSING_PRICES",
-        description="Real property sales prices by property type and municipality, annual",
+        description="Seasonally adjusted number of sales by property category, quarterly (national only — no municipality breakdown)",
         variables=[
-            {"code": "EJENDOMSKATE", "values": ["*"]},  # required by API
-            {"code": "OMRÅDE",       "values": ["*"]},  # municipality
-            {"code": "Tid",          "values": ["*"]},  # time period
+            {"code": "EJENDOMSKATE", "values": ["*"]},  # property category
+            {"code": "Tid",          "values": ["*"]},  # time period (quarterly)
+            # NOTE: EJEN12 has no OMRÅDE (municipality) variable; removed to fix HTTP 400
         ],
     ),
     TableConfig(
@@ -44,6 +48,10 @@ TABLES: list[TableConfig] = [
             {"code": "INDKOMSTTYPE", "values": ["*"]},  # all income types
             {"code": "Tid",          "values": ["*"]},  # annual periods
         ],
+        # Full cross-product exceeds DST 1 M-cell CSV limit; chunk by year.
+        # 10 years × ~110 regions × 4 units × ~39 income types ≈ 172 k cells/chunk.
+        chunk_variable="Tid",
+        chunk_size=10,
     ),
     TableConfig(
         table_id="LONS10",
