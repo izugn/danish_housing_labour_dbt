@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw
-    database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+    database: "{{ env_var('SNOWFLAKE_DATABASE', 'DANISH_HOUSING') }}"
     schema: RAW
     loaded_at_field: _loaded_at
     freshness:
