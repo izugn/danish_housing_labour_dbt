@@ -80,10 +80,10 @@ TABLES: list[TableConfig] = [
                 [{"code": "YDELSESTYPE", "values": ["*"]}, {"code": "OMRÅDE", "values": ["*"]}, {"code": "Tid", "values": None}]),
     TableConfig("LONS10", "lons10_earnings.csv", "Average monthly earnings by industry",
                 [{"code": "LØNMÅL", "values": ["*"]}, {"code": "Tid", "values": None}]),
-    TableConfig("EJEN77", "ejen77.csv", "EJEN77 sample data", [{"code": "Tid", "values": None}]),
-    TableConfig("EJ56",   "ej56.csv",   "EJ56 sample data",   [{"code": "Tid", "values": None}]),
-    TableConfig("LABY22", "laby22.csv", "LABY22 sample data", [{"code": "Tid", "values": None}]),
-    TableConfig("EJ131",  "ej131.csv",  "EJ131 sample data",  [{"code": "Tid", "values": None}]),
+    TableConfig("EJEN77", "ejen77.csv", "EJEN77 sample data", [{"code": "OMRÅDE", "values": ["*"]}, {"code": "Tid", "values": None}]),
+    TableConfig("EJ56",   "ej56.csv",   "EJ56 sample data",   [{"code": "OMRÅDE", "values": ["*"]}, {"code": "Tid", "values": None}]),
+    TableConfig("LABY22", "laby22.csv", "LABY22 sample data", [{"code": "KOMGRP", "values": ["*"]}, {"code": "Tid", "values": None}]),
+    TableConfig("EJ131",  "ej131.csv",  "EJ131 sample data",  [{"code": "REGION", "values": ["*"]}, {"code": "Tid", "values": None}]),
     TableConfig(
         "INDKP101", "indkp101.csv", "Personal income by municipality",
         [
