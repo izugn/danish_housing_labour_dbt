@@ -8,7 +8,7 @@
 }}
 
 with housing as (
-    select * from {{ ref('src_housing_prices') }}
+    select * from {{ ref('src_price_regional') }}
 ),
 
 municipalities as (
