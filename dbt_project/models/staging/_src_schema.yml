@@ -4,77 +4,150 @@ sources:
   - name: raw
     database: "{{ env_var('SNOWFLAKE_DATABASE', 'DANISH_HOUSING') }}"
     schema: RAW
-    loaded_at_field: _loaded_at
-    freshness:
-      warn_after:  {count: 25, period: hour}
-      error_after: {count: 49, period: hour}
+    loaded_at_field: _LOADED_AT
     tables:
-      - name: RAW_HOUSING_PRICES
-        description: Raw housing price data from DST table EJEN12.
+      - name: RAW_PRICE_INDEX
+        description: >
+          Property price index (2022=100) by region, property category and metric type.
+          Sourced from DST table EJ56. Quarterly frequency from 1992Q1.
+          TAL dimension contains Index, QoQ % change, and YoY % change.
+          Suppressed values (originally "..") were replaced with NULL during ingestion.
+        freshness:
+          warn_after:  {count: 100, period: day}
+          error_after: {count: 200, period: day}
+
+      - name: RAW_PRICE_REGIONAL
+        description: >
+          Sales key figures by region and property category.
+          Sourced from DST table EJ131. Monthly frequency from 2006M01.
+          BNØGLE dimension contains average price, sales count, purchase sum %, estimated sales.
+          Suppressed values for owner-occupied flats outside Region Hovedstaden replaced with NULL.
+        freshness:
+          warn_after:  {count: 40, period: day}
+          error_after: {count: 70, period: day}
+
       - name: RAW_UNEMPLOYMENT
-        description: Raw unemployment data from DST table AUL01.
-      - name: RAW_NATIONAL_EARNINGS
-        description: Raw national earnings data from DST table LONS10.
+        description: >
+          Registered unemployment by type and area. Sourced from DST table AUL01.
+          Annual frequency. OMRÅDE contains municipalities, regions, and national totals.
+          YDELSESTYPE distinguishes gross unemployment, net unemployment, etc.
+        freshness:
+          warn_after:  {count: 400, period: day}
+          error_after: {count: 500, period: day}
+
       - name: RAW_LOCAL_INCOME
         description: >
-          Raw personal income data from DST table INDKP101.
-          Annual, municipality-level. Contains average disposable income,
-          taxable income, and wage income per municipality from 2013 onward.
+          Personal income statistics by municipality. Sourced from DST table INDKP101.
+          Annual frequency. Contains multiple income types (disposable, pre-tax, primary)
+          and units (count of people, average DKK amount).
+        freshness:
+          warn_after:  {count: 400, period: day}
+          error_after: {count: 500, period: day}
+
       - name: RAW_HOUSING_NATIONAL
         description: >
-          Raw national property sales key figures from DST table LABY22.
-          Annual. Contains average price per m², average property price,
-          share of first-time buyers, and buyer age from 2013 onward.
+          National key figures for property sales by category.
+          Sourced from DST table LABY22. Annual frequency from 2012.
+          BNØGLE dimension contains average property price, price per m², first-time buyer age.
+        freshness:
+          warn_after:  {count: 400, period: day}
+          error_after: {count: 500, period: day}
 
 models:
-  - name: src_housing_prices
-    description: Staged housing prices with renamed columns and cast types.
+  - name: src_price_index
+    description: >
+      Staged property price index from RAW_PRICE_INDEX (EJ56).
+      Filtered to 5 Danish regions + "All Denmark". Excludes provinces.
+      TAL dimension pivoted into three numeric columns: price_index, pct_change_qoq, pct_change_yoy.
+      Grain: one row per region × property category × quarter.
     columns:
-      - name: housing_price_id
+      - name: price_index_id
+        description: Surrogate key (MD5 of region_name + property_category + period_quarter).
         tests: [unique, not_null]
-      - name: municipality_code
+      - name: region_name
         tests: [not_null]
-      - name: period_date
+      - name: property_category
         tests: [not_null]
-      - name: price_value
+      - name: period_quarter
+        description: Raw period string from DST, e.g. "2024Q3".
+        tests: [not_null]
+      - name: period_year
+        description: Integer year extracted from period_quarter.
+        tests: [not_null]
+      - name: price_index
+        description: Price index value (2022=100). NULL where suppressed by DST.
+      - name: pct_change_qoq
+        description: Quarter-over-quarter % change. NULL where suppressed.
+      - name: pct_change_yoy
+        description: Year-over-year % change. NULL where suppressed.
+
+  - name: src_price_regional
+    description: >
+      Staged regional sales key figures from RAW_PRICE_REGIONAL (EJ131).
+      Filtered to "One-family houses" only.
+      BNØGLE dimension pivoted into named columns.
+      Grain: one row per region × property category × month.
+    columns:
+      - name: price_regional_id
+        description: Surrogate key (MD5 of region_name + property_category + period_month).
+        tests: [unique, not_null]
+      - name: region_name
+        tests: [not_null]
+      - name: property_category
+        tests: [not_null]
+      - name: period_month
+        description: Raw period string from DST, e.g. "2006M01".
+        tests: [not_null]
+      - name: period_year
+        description: Integer year extracted from period_month.
+        tests: [not_null]
+      - name: avg_price_dkk_1000
+        description: Average price per property in DKK thousands. NULL where suppressed.
+      - name: sales_count
+        description: Number of sales included in the price calculation.
+      - name: purchase_sum_pct_taxable
+        description: Purchase sum as a percentage of taxable value.
+      - name: estimated_sales_count
+        description: Estimated total number of sales.
+
+  - name: src_unemployment
+    description: >
+      Staged gross unemployment counts from RAW_UNEMPLOYMENT (AUL01).
+      Filtered to YDELSESTYPE = "Gross unemployment" only.
+      Retains all OMRÅDE values (municipalities, regions, and "All Denmark").
+      Grain: one row per area × year.
+    columns:
+      - name: unemployment_id
+        description: Surrogate key (MD5 of area_name + period_year).
+        tests: [unique, not_null]
+      - name: area_name
+        description: Municipality, region, or "All Denmark".
+        tests: [not_null]
+      - name: period_year
+        tests: [not_null]
+      - name: gross_unemployment_count
+        description: Number of gross unemployed persons.
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
 
-  - name: src_unemployment
-    description: Staged unemployment figures per municipality and period.
-    columns:
-      - name: unemployment_id
-        tests: [unique, not_null]
-      - name: municipality_code
-        tests: [not_null]
-      - name: period_date
-        tests: [not_null]
-
-  - name: src_earnings
-    description: Staged average monthly earnings per industry and period.
-    columns:
-      - name: earnings_id
-        tests: [unique, not_null]
-      - name: industry_code
-        tests: [not_null]
-      - name: period_date
-        tests: [not_null]
-
   - name: src_local_income
     description: >
-      Staged municipality-level personal income. Filtered to
-      ENHED = 'Average income for all people (DKK)' and
-      INDKOMSTTYPE = 'Taxable income'. One row per municipality per year.
+      Staged municipality-level average income from RAW_LOCAL_INCOME (INDKP101).
+      Filtered to ENHED = "Average income for all people (DKK)"
+      and INDKOMSTTYPE = "1 Disposable income (2+30-31-32-35)".
+      Grain: one row per municipality × year.
     columns:
       - name: income_id
+        description: Surrogate key (MD5 of municipality_name + period_year).
         tests: [unique, not_null]
       - name: municipality_name
         tests: [not_null]
       - name: period_year
         tests: [not_null]
-      - name: avg_income_dkk
+      - name: avg_disposable_income_dkk
+        description: Average disposable income per person in DKK.
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
@@ -83,19 +156,23 @@ models:
 
   - name: src_housing_national
     description: >
-      Staged national housing key figures from LABY22.
-      Pivoted so each BNØGLE metric becomes its own column.
-      Filtered to EJENDOMSKATE = 'One-family houses'.
+      Staged national housing key figures from RAW_HOUSING_NATIONAL (LABY22).
+      Filtered to EJENDOMSKATE = "One-family houses".
+      BNØGLE dimension pivoted into named columns.
+      Grain: one row per property category × year.
     columns:
       - name: housing_national_id
+        description: Surrogate key (MD5 of property_category + period_year).
         tests: [unique, not_null]
       - name: property_category
         tests: [not_null]
       - name: period_year
         tests: [not_null]
-      - name: avg_price_per_sqm_dkk
-        description: Average price per square meter per property (DKK).
-      - name: avg_property_price_dkk_1000
-        description: Average price per property in DKK thousands.
-      - name: share_first_time_buyers_pct
-        description: Share of first-time buyers in percent.
+      - name: avg_price_per_property_dkk_1000
+        description: National average property price in DKK thousands.
+      - name: avg_price_per_m2_dkk
+        description: National average price per square metre in DKK.
+      - name: first_time_buyer_avg_age
+        description: Average age of first-time buyers.
+      - name: estimated_sales_count
+        description: Estimated national sales volume.
