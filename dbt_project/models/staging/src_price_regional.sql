@@ -6,7 +6,14 @@
 
 with source as (
 
-    select * from {{ source('raw', 'RAW_PRICE_REGIONAL') }}
+    select
+        REGION          as region_name,
+        EJENDOMSKATE    as ejendomskate,
+        "BNØGLE"        as bnogle,
+        TID             as tid,
+        INDHOLD         as indhold,
+        _LOADED_AT      as loaded_at
+    from {{ source('raw', 'RAW_PRICE_REGIONAL') }}
 
 ),
 
@@ -15,7 +22,7 @@ with source as (
 one_family as (
 
     select * from source
-    where EJENDOMSKATE = 'One-family houses'
+    where ejendomskate = 'One-family houses'
 
 ),
 
@@ -24,35 +31,31 @@ one_family as (
 pivoted as (
 
     select
-        REGION                                          as region_name,
-        EJENDOMSKATE                                    as property_category,
-        TID                                             as period_month,
+        region_name,
+        ejendomskate                                        as property_category,
+        tid                                                 as period_month,
+        cast(left(tid, 4) as integer)                       as period_year,
+        cast(right(tid, 2) as integer)                      as period_month_num,
 
-        -- Extract integer year from period string like "2006M01" → 2006
-        cast(left(TID, 4) as integer)                   as period_year,
+        max(case when bnogle = 'Average price per property (dkk 1000)'
+            then try_cast(indhold as float) end)            as avg_price_dkk_1000,
 
-        -- Extract integer month: "2006M01" → 1
-        cast(right(TID, 2) as integer)                  as period_month_num,
+        max(case when bnogle = 'Sales in the price calculation (number)'
+            then try_cast(indhold as float) end)            as sales_count,
 
-        max(case when BNØGLE = 'Average price per property (dkk 1000)'
-            then try_cast(INDHOLD as float) end)        as avg_price_dkk_1000,
+        max(case when bnogle = 'Purchase sum in percent of taxable value'
+            then try_cast(indhold as float) end)            as purchase_sum_pct_taxable,
 
-        max(case when BNØGLE = 'Sales in the price calculation (number)'
-            then try_cast(INDHOLD as float) end)        as sales_count,
+        max(case when bnogle = 'Estimated number of sales'
+            then try_cast(indhold as float) end)            as estimated_sales_count,
 
-        max(case when BNØGLE = 'Purchase sum in percent of taxable value'
-            then try_cast(INDHOLD as float) end)        as purchase_sum_pct_taxable,
-
-        max(case when BNØGLE = 'Estimated number of sales'
-            then try_cast(INDHOLD as float) end)        as estimated_sales_count,
-
-        max(_LOADED_AT)                                 as _loaded_at
+        max(loaded_at)                                      as _loaded_at
 
     from one_family
     group by
-        REGION,
-        EJENDOMSKATE,
-        TID
+        region_name,
+        ejendomskate,
+        tid
 
 ),
 

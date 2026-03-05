@@ -6,7 +6,13 @@
 
 with source as (
 
-    select * from {{ source('raw', 'RAW_UNEMPLOYMENT') }}
+    select
+        YDELSESTYPE     as ydelsestype,
+        "OMRÅDE"        as omraade,
+        TID             as tid,
+        INDHOLD         as indhold,
+        _LOADED_AT      as loaded_at
+    from {{ source('raw', 'RAW_UNEMPLOYMENT') }}
 
 ),
 
@@ -15,19 +21,19 @@ with source as (
 gross_only as (
 
     select * from source
-    where YDELSESTYPE = 'Gross unemployment'
+    where ydelsestype = 'Gross unemployment'
 
 ),
 
 renamed as (
 
     select
-        {{ dbt_utils.generate_surrogate_key(['OMRÅDE', 'TID']) }}
+        {{ dbt_utils.generate_surrogate_key(['omraade', 'tid']) }}
                                         as unemployment_id,
-        OMRÅDE                          as area_name,
-        cast(TID as integer)            as period_year,
-        try_cast(INDHOLD as float)      as gross_unemployment_count,
-        _LOADED_AT                      as _loaded_at
+        omraade                         as area_name,
+        cast(tid as integer)            as period_year,
+        try_cast(indhold as float)      as gross_unemployment_count,
+        loaded_at                       as _loaded_at
 
     from gross_only
 
