@@ -12,7 +12,7 @@ with unemployment as (
 ),
 
 earnings as (
-    select * from {{ ref('src_earnings') }}
+    select * from {{ ref('src_local_income') }}
 ),
 
 municipalities as (
