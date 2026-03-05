@@ -1,25 +1,43 @@
+{{
+    config(
+        materialized='view'
+    )
+}}
+
 with source as (
+
     select * from {{ source('raw', 'RAW_UNEMPLOYMENT') }}
+
+),
+
+-- Filter to gross unemployment only (the most comparable cross-area metric).
+-- Retains all area types: municipalities, regions, and "All Denmark".
+gross_only as (
+
+    select * from source
+    where YDELSESTYPE = 'Gross unemployment'
+
 ),
 
 renamed as (
+
     select
-        -- identifiers
-        {{ dbt_utils.generate_surrogate_key(['OMRÅDE', 'TID']) }} as unemployment_id,
-        cast(OMRÅDE  as varchar)  as municipality_code,
+        {{ dbt_utils.generate_surrogate_key(['OMRÅDE', 'TID']) }}
+                                        as unemployment_id,
+        OMRÅDE                          as area_name,
+        cast(TID as integer)            as period_year,
+        try_cast(INDHOLD as float)      as gross_unemployment_count,
+        _LOADED_AT                      as _loaded_at
 
-        -- period
-        {{ convert_dst_period('TID') }}  as period_date,
-        cast(TID     as varchar)         as raw_period,
+    from gross_only
 
-        -- metrics
-        cast(replace(INDHOLD, '.', '') as numeric(10, 2)) as unemployment_count,
+),
 
-        -- metadata
-        current_timestamp as _loaded_at
+final as (
 
-    from source
-    where INDHOLD is not null
+    select * from renamed
+    where gross_unemployment_count is not null
+
 )
 
-select * from renamed
+select * from final
