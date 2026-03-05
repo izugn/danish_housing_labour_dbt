@@ -6,7 +6,13 @@
 
 with source as (
 
-    select * from {{ source('raw', 'RAW_HOUSING_NATIONAL') }}
+    select
+        EJENDOMSKATE    as ejendomskate,
+        "BNØGLE"        as bnogle,
+        TID             as tid,
+        INDHOLD         as indhold,
+        _LOADED_AT      as loaded_at
+    from {{ source('raw', 'RAW_HOUSING_NATIONAL') }}
 
 ),
 
@@ -14,7 +20,7 @@ with source as (
 one_family as (
 
     select * from source
-    where EJENDOMSKATE = 'One-family houses'
+    where ejendomskate = 'One-family houses'
 
 ),
 
@@ -23,27 +29,27 @@ one_family as (
 pivoted as (
 
     select
-        EJENDOMSKATE                                        as property_category,
-        cast(TID as integer)                                as period_year,
+        ejendomskate                                            as property_category,
+        cast(tid as integer)                                    as period_year,
 
-        max(case when BNØGLE = 'Average price per property (DKK 1,000)'
-            then try_cast(INDHOLD as float) end)            as avg_price_per_property_dkk_1000,
+        max(case when bnogle = 'Average price per property (DKK 1,000)'
+            then try_cast(indhold as float) end)                as avg_price_per_property_dkk_1000,
 
-        max(case when BNØGLE = 'Average price per square meter per property (DKK per m2)'
-            then try_cast(INDHOLD as float) end)            as avg_price_per_m2_dkk,
+        max(case when bnogle = 'Average price per square meter per property (DKK per m2)'
+            then try_cast(indhold as float) end)                as avg_price_per_m2_dkk,
 
-        max(case when BNØGLE = 'Average age at which all buyers are first-time buyers (age)'
-            then try_cast(INDHOLD as float) end)            as first_time_buyer_avg_age,
+        max(case when bnogle = 'Average age at which all buyers are first-time buyers (age)'
+            then try_cast(indhold as float) end)                as first_time_buyer_avg_age,
 
-        max(case when BNØGLE = 'Estimated number of sales'
-            then try_cast(INDHOLD as float) end)            as estimated_sales_count,
+        max(case when bnogle = 'Estimated number of sales'
+            then try_cast(indhold as float) end)                as estimated_sales_count,
 
-        max(_LOADED_AT)                                     as _loaded_at
+        max(loaded_at)                                          as _loaded_at
 
     from one_family
     group by
-        EJENDOMSKATE,
-        TID
+        ejendomskate,
+        tid
 
 ),
 
