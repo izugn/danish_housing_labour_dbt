@@ -130,7 +130,8 @@ models:
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
+              arguments:
+                min_value: 0
 
   - name: src_local_income
     description: >
@@ -151,8 +152,9 @@ models:
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 2000000
+              arguments:
+                min_value: 0
+                max_value: 2000000
 
   - name: src_housing_national
     description: >
