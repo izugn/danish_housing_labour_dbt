@@ -74,6 +74,12 @@ def load_dataframe(df: pd.DataFrame, table_name: str, overwrite: bool = False) -
     """
     df = _normalize_columns(df)
 
+    # PyArrow requires homogeneous types; cast mixed-type object columns to str
+    # so that Parquet serialisation never encounters unexpected int/float values.
+    obj_cols = [c for c, dtype in df.dtypes.items() if dtype == object]
+    if obj_cols:
+        df[obj_cols] = df[obj_cols].astype(str)
+
     conn = _get_connection()
     try:
         success, nchunks, nrows, _ = write_pandas(
