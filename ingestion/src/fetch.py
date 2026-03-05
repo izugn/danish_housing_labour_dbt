@@ -17,6 +17,11 @@ _MAX_ATTEMPTS = 2
 _RETRY_BACKOFF_S = 5
 
 
+def _replace_suppressed(df: pd.DataFrame) -> pd.DataFrame:
+    """Replace DST suppressed-data marker '..' with pd.NA throughout the DataFrame."""
+    return df.replace("..", pd.NA)
+
+
 def _get_variable_values(table_id: str, variable_code: str) -> list[str]:
     """Return all available value IDs for a variable by calling the DST tableinfo endpoint."""
     response = requests.get(
@@ -43,10 +48,7 @@ def _fetch_single(config: TableConfig, variables: list[dict], fmt: str) -> pd.Da
     response = None
     for attempt in range(_MAX_ATTEMPTS):
         if attempt > 0:
-            print(
-                f"  WARNING: retrying {config.table_id} (attempt {attempt + 1}) "
-                f"after {_RETRY_BACKOFF_S}s ..."
-            )
+            print(f"  Retrying {config.table_id} after HTTP error...")
             time.sleep(_RETRY_BACKOFF_S)
 
         response = requests.post(DST_API_URL, json=payload, timeout=60)
@@ -114,8 +116,8 @@ def fetch_table(config: TableConfig, fmt: str = "CSV") -> pd.DataFrame:
     else:
         df = _fetch_single(config, base_variables, fmt)
 
-    loaded_at = pd.Timestamp.utcnow()
-    df["_loaded_at"] = loaded_at
+    df = _replace_suppressed(df)
+    df["_loaded_at"] = pd.Timestamp.utcnow()
     df["_src_table"] = config.table_id
 
     return df
@@ -127,13 +129,13 @@ def fetch_all_tables(configs: list[TableConfig]) -> dict[str, pd.DataFrame]:
     for config in configs:
         try:
             df = fetch_table(config)
-            data_cols = [c for c in df.columns if not c.startswith("_")]
             print(
-                f"✓  {config.table_id:<12}→  {len(df):>6,} rows  |  "
-                f"cols: {', '.join(data_cols)}"
+                f"✓ {config.table_id} → {len(df):,} rows | "
+                f"cols: {', '.join(df.columns)}"
             )
             results[config.table_id] = df
         except Exception as exc:
-            print(f"✗  {config.table_id:<12}→  ERROR: {exc}")
+            print(f"✗ {config.table_id} → ERROR: {exc}")
+            results[config.table_id] = None
 
     return results
