@@ -18,16 +18,34 @@ class TableConfig:
 
 
 TABLES: list[TableConfig] = [
+    # --- Housing price sources ---
     TableConfig(
-        table_id="EJEN12",
-        snowflake_table="RAW_HOUSING_PRICES",
-        description="Seasonally adjusted number of sales by property category, quarterly (national only — no municipality breakdown)",
+        table_id="EJ56",
+        snowflake_table="RAW_PRICE_INDEX",
+        description="Property price index (2022=100) by region, category and metric",
         variables=[
-            {"code": "EJENDOMSKATE", "values": ["*"]},  # property category
-            {"code": "Tid",          "values": ["*"]},  # time period (quarterly)
-            # NOTE: EJEN12 has no OMRÅDE (municipality) variable; removed to fix HTTP 400
+            {"code": "OMRÅDE",       "values": ["*"]},  # all regions + All Denmark + provinces
+            {"code": "EJENDOMSKATE", "values": ["*"]},  # One-family houses, Owner-occupied flats, Weekend cottages
+            {"code": "TAL",          "values": ["*"]},  # Index, QoQ % change, YoY % change
+            {"code": "Tid",          "values": ["*"]},  # quarterly from 1992Q1
+            # Columns returned by API: OMRÅDE, EJENDOMSKATE, TAL, TID, INDHOLD
+            # Note: `..` (suppressed) values appear for some province/property combinations
         ],
     ),
+    TableConfig(
+        table_id="EJ131",
+        snowflake_table="RAW_PRICE_REGIONAL",
+        description="Sales key figures by region and property category, monthly",
+        variables=[
+            {"code": "REGION",       "values": ["*"]},  # all regions + All Denmark
+            {"code": "EJENDOMSKATE", "values": ["*"]},  # One-family houses, Owner-occupied flats
+            {"code": "BNØGLE",       "values": ["*"]},  # sales count, avg price, purchase sum %, estimated sales
+            {"code": "Tid",          "values": ["*"]},  # monthly from 2006M01
+            # Columns returned by API: REGION, EJENDOMSKATE, BNØGLE, TID, INDHOLD
+            # Note: `..` appears for Owner-occupied flats outside Region Hovedstaden
+        ],
+    ),
+    # --- Labour market / income sources ---
     TableConfig(
         table_id="AUL01",
         snowflake_table="RAW_UNEMPLOYMENT",
@@ -53,15 +71,7 @@ TABLES: list[TableConfig] = [
         chunk_variable="Tid",
         chunk_size=10,
     ),
-    TableConfig(
-        table_id="LONS10",
-        snowflake_table="RAW_NATIONAL_EARNINGS",
-        description="National earnings by industry and earnings measure, annual",
-        variables=[
-            {"code": "LØNMÅL", "values": ["*"]},  # all earnings measures
-            {"code": "Tid",    "values": ["*"]},  # annual periods
-        ],
-    ),
+    # --- National housing benchmark ---
     TableConfig(
         table_id="LABY22",
         snowflake_table="RAW_HOUSING_NATIONAL",
