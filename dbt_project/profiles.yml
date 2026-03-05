@@ -9,7 +9,7 @@ danish_housing_labour:
       private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', 'REDACTED') }}"
       role:      "{{ env_var('SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
       database:  "{{ env_var('SNOWFLAKE_DATABASE', 'DANISH_HOUSING') }}"
-      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'DANISH_HOUSING_WH') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
       schema: dbt_dev
       threads: 4
       client_session_keep_alive: false
@@ -22,7 +22,7 @@ danish_housing_labour:
       private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', 'REDACTED') }}"
       role:      "{{ env_var('SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
       database:  "{{ env_var('SNOWFLAKE_DATABASE', 'DANISH_HOUSING') }}"
-      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'DANISH_HOUSING_WH') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
       schema: analytics
       threads: 8
       client_session_keep_alive: false
