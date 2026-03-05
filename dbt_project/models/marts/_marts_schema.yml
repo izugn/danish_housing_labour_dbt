@@ -27,5 +27,5 @@ models:
       - name: affordability_tier
         tests:
           - accepted_values:
-            arguments:
-              values: ['HIGH_UNAFFORDABILITY', 'MODERATE_UNAFFORDABILITY', 'AFFORDABLE']
+              arguments:
+                values: ['HIGH_UNAFFORDABILITY', 'MODERATE_UNAFFORDABILITY', 'AFFORDABLE']
