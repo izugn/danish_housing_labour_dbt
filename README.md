@@ -1,7 +1,11 @@
 # Danish Housing & Labour Market Analytics
 
-End-to-end pipeline that ingests Statistics Denmark (DST) data into Snowflake,
+End-to-end ELT pipeline that ingests Statistics Denmark (DST) data into Snowflake,
 transforms it with dbt Core, and orchestrates everything with Dagster.
+
+Explores two research questions:
+- Does rising unemployment predict slower housing price growth by region?
+- Are regions with persistently low unemployment also the most expensive?
 
 ---
 
@@ -9,82 +13,18 @@ transforms it with dbt Core, and orchestrates everything with Dagster.
 
 ```
 danish_housing_labour/
-├── ingestion/          # Python: DST API → Snowflake raw tables
+├── ingestion/          # Python: DST StatBank API → Snowflake RAW schema
+│   ├── src/
+│   │   ├── tables.py   # DST table configs (variables, chunk sizes)
+│   │   ├── fetch.py    # API fetch with retry, null sentinel handling
+│   │   └── load.py     # Snowflake key-pair auth, write_pandas loader
+│   └── run_ingestion.py
 ├── dbt_project/        # dbt Core: staging → core → marts
+│   ├── models/
+│   │   ├── staging/    # 5 source views, pivots, type casts
+│   │   ├── core/       # dimension table + 2 incremental fact tables
+│   │   └── marts/      # 2 analytics-ready views
+│   ├── seeds/          # municipality → region mapping (98 municipalities)
+│   └── docs/           # dbt docs overview page
 └── orchestration/      # Dagster: daily refresh schedule
 ```
-
----
-
-## Quick Start
-
-### 1. Ingestion
-
-```bash
-cd ingestion
-pip install -r requirements.txt
-cp .env.example .env   # fill in Snowflake credentials
-python run_ingestion.py
-```
-
-### 2. dbt
-
-```bash
-cd dbt_project
-pip install dbt-snowflake
-dbt deps              # install packages from packages.yml
-dbt seed              # load municipality_regions.csv
-dbt run               # build all models
-dbt test              # run all tests
-dbt docs generate && dbt docs serve
-```
-
-> **Note:** `profiles.yml` is included in this repo for convenience.
-> Move it to `~/.dbt/profiles.yml` for production use.
-
-### 3. Orchestration (Dagster)
-
-```bash
-cd orchestration
-pip install dagster dagster-dbt
-dagster dev           # opens Dagster UI at http://localhost:3000
-```
-
-Before running, generate the dbt manifest:
-
-```bash
-cd dbt_project && dbt parse
-```
-
----
-
-## Data Sources
-
-| DST Table | Description                                     | Snowflake Raw Table      | Frequency  |
-|-----------|-------------------------------------------------|--------------------------|------------|
-| EJEN12    | Property sale prices per m² by municipality    | `RAW_HOUSING_PRICES`     | Quarterly  |
-| AUL01     | Registered unemployment by municipality         | `RAW_UNEMPLOYMENT`       | Annual     |
-| INDKP101  | Personal income by municipality                 | `RAW_LOCAL_INCOME`       | Annual     |
-| LONS10    | Average monthly earnings by industry (national) | `RAW_NATIONAL_EARNINGS`  | Annual     |
-| LABY22    | Key figures for property sales (national)       | `RAW_HOUSING_NATIONAL`   | Annual     |
-
-> Note: EJEN12 is quarterly; all other core tables are annual. The staging
-> layer aggregates EJEN12 quarters to calendar-year averages using the
-> `period_year` column before joining with unemployment and income data.
-
----
-
-## Key Models
-
-| Model                            | Layer   | Description                                              |
-|----------------------------------|---------|----------------------------------------------------------|
-| `src_housing_prices`             | Staging | Cast + renamed housing price rows                        |
-| `src_unemployment`               | Staging | Cast + renamed unemployment rows                         |
-| `src_earnings`                   | Staging | Cast + renamed earnings rows                             |
-| `src_local_income`               | Staging | Cast + renamed INDKP101 rows (municipality income)       |
-| `src_housing_national`           | Staging | Cast + renamed LABY22 rows (national annual trends)      |
-| `dim_municipalities`             | Core    | Municipality ↔ region mapping (from seed)               |
-| `fct_housing_transactions`       | Core    | Incremental housing prices enriched with region          |
-| `fct_labour_market`              | Core    | Incremental unemployment + earnings per period           |
-| `mart_housing_affordability`     | Marts   | Price-to-income ratio per municipality                   |
-| `mart_labour_housing_correlation`| Marts   | Regional affordability tiers                             |
