@@ -2,35 +2,98 @@ version: 2
 
 models:
   - name: dim_municipalities
-    description: Dimension table of Danish municipalities with region mappings from seed.
+    description: >
+      Dimension table of all 98 Danish municipalities with region mappings,
+      loaded directly from the municipality_regions seed.
     columns:
       - name: municipality_code
+        description: Official Danish municipality code (kommunenummer).
         tests: [unique, not_null]
       - name: municipality_name
+        description: Municipality name as used in DST API responses.
+        tests: [not_null]
+      - name: region_code
+        description: Official Danish region code.
         tests: [not_null]
       - name: region_name
+        description: English region name (e.g. "Capital Region of Denmark").
         tests: [not_null]
 
   - name: fct_housing_transactions
     description: >
-      Incremental fact table of housing price observations per municipality and period,
-      enriched with region information from dim_municipalities.
+      Incremental fact table of annual average housing prices per municipality and year.
+      Source data (src_price_regional / EJ131) is regional and monthly; it is aggregated
+      to annual grain and expanded to municipality grain by joining dim_municipalities on
+      translated region name. Danish DST region names ("Region Hovedstaden" etc.) are
+      mapped to the English convention used in the seed within this model.
+      Grain: one row per municipality × property_category × year.
     columns:
       - name: housing_price_id
+        description: >
+          Surrogate key (MD5 of municipality_code + property_category + period_year).
         tests: [unique, not_null]
       - name: municipality_code
         tests: [not_null]
+      - name: municipality_name
+        tests: [not_null]
+      - name: region_code
+        description: Official Danish region code from dim_municipalities.
+        tests: [not_null]
+      - name: region_name
+        description: English region name from dim_municipalities.
+        tests: [not_null]
+      - name: region_name_dst
+        description: Original Danish region name as returned by the DST API (EJ131).
+        tests: [not_null]
+      - name: property_category
+        tests: [not_null]
+      - name: period_year
+        description: Calendar year of the observation.
+        tests: [not_null]
       - name: period_date
+        description: First day of the calendar year (e.g. 2006-01-01).
         tests: [not_null]
       - name: price_value
+        description: >
+          Annual average property price in DKK (mean of monthly avg_price_dkk_1000 values
+          converted to DKK, rounded to nearest DKK).
         tests: [not_null]
 
   - name: fct_labour_market
     description: >
-      Incremental fact table joining unemployment counts and average earnings per
-      municipality and period.
+      Incremental fact table of gross unemployment counts and average disposable income
+      per municipality and year. Unemployment area names (src_unemployment / AUL01) are
+      matched to dim_municipalities on municipality_name, automatically excluding regional
+      and national totals. Income (src_local_income / INDKP101) is left-joined on
+      municipality name and year. avg_monthly_earnings_dkk is derived as
+      avg_disposable_income_dkk / 12.
+      Grain: one row per municipality × year.
     columns:
       - name: labour_id
+        description: Surrogate key (MD5 of municipality_code + period_year).
         tests: [unique, not_null]
-      - name: period_date
+      - name: municipality_code
         tests: [not_null]
+      - name: municipality_name
+        tests: [not_null]
+      - name: region_name
+        description: English region name from dim_municipalities.
+        tests: [not_null]
+      - name: period_year
+        description: Calendar year of the observation.
+        tests: [not_null]
+      - name: period_date
+        description: First day of the calendar year (e.g. 2006-01-01).
+        tests: [not_null]
+      - name: unemployment_count
+        description: Gross unemployment headcount for the municipality and year (from AUL01).
+        tests: [not_null]
+      - name: avg_disposable_income_dkk
+        description: >
+          Average annual disposable income per person in DKK (from INDKP101).
+          NULL where the municipality has no matching income record for the year.
+      - name: avg_monthly_earnings_dkk
+        description: >
+          Average monthly disposable income per person in DKK
+          (avg_disposable_income_dkk / 12, rounded to nearest DKK).
+          NULL where avg_disposable_income_dkk is NULL.
