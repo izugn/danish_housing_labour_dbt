@@ -1,0 +1,33 @@
+version: 2
+
+seeds:
+  - name: municipality_regions
+    description: >
+      Static mapping of all 98 Danish municipalities to their region.
+      Used to aggregate municipality-level unemployment (AUL01) and income (INDKP101)
+      to region level for joining with housing price data (EJ56, EJ131).
+      Region names use English convention. A DST name mapping is handled in the core layer.
+    columns:
+      - name: municipality_code
+        description: Official Danish municipality code (kommunenummer).
+        tests: [unique, not_null]
+
+      - name: municipality_name
+        description: Municipality name as used in DST API responses.
+        tests: [not_null]
+
+      - name: region_code
+        description: Official Danish region code.
+        tests: [not_null]
+
+      - name: region_name
+        description: English region name (e.g. "Capital Region of Denmark").
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - Capital Region of Denmark
+                - Region Zealand
+                - Region of Southern Denmark
+                - Central Denmark Region
+                - North Denmark Region
