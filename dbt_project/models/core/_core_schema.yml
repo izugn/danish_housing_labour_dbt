@@ -22,12 +22,13 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values:
-                - Region Hovedstaden
-                - Region Sjælland
-                - Region Syddanmark
-                - Region Midtjylland
-                - Region Nordjylland
+              arguments:
+                values:
+                  - Region Hovedstaden
+                  - Region Sjælland
+                  - Region Syddanmark
+                  - Region Midtjylland
+                  - Region Nordjylland
 
   - name: fct_housing_prices
     description: >

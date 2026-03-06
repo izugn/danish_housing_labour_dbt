@@ -25,9 +25,10 @@ seeds:
         tests:
           - not_null
           - accepted_values:
-              values:
-                - Capital Region of Denmark
-                - Region Zealand
-                - Region of Southern Denmark
-                - Central Denmark Region
-                - North Denmark Region
+              arguments:
+                values:
+                  - Capital Region of Denmark
+                  - Region Zealand
+                  - Region of Southern Denmark
+                  - Central Denmark Region
+                  - North Denmark Region
