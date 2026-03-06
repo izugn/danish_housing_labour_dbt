@@ -6,12 +6,27 @@
     )
 }}
 
-with unemployment as (
+{% if is_incremental() %}
+
+with
+-- Capture the watermark once to avoid correlated subquery issues in Snowflake
+watermark as (
+
+    select max(_loaded_at) as max_loaded_at from {{ this }}
+
+),
+
+{% else %}
+
+with
+
+{% endif %}
+
+unemployment as (
 
     select * from {{ ref('src_unemployment') }}
-
     {% if is_incremental() %}
-        and _loaded_at > (select max(_loaded_at) from {{ this }})
+    where _loaded_at > (select max_loaded_at from watermark)
     {% endif %}
 
 ),
@@ -19,9 +34,8 @@ with unemployment as (
 income as (
 
     select * from {{ ref('src_local_income') }}
-
     {% if is_incremental() %}
-        and _loaded_at > (select max(_loaded_at) from {{ this }})
+    where _loaded_at > (select max_loaded_at from watermark)
     {% endif %}
 
 ),
