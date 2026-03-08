@@ -43,8 +43,10 @@ regional_prices as (
     select
         region_name,
         period_year,
-        round(avg(avg_price_dkk_1000), 1)   as avg_annual_price_dkk_1000,
-        sum(sales_count)            as annual_sales_count
+        -- Convert from DKK thousands to DKK millions for readability
+        -- Source value e.g. 2455.1 (thousands) → 2.46 (millions)
+        round(avg(avg_price_dkk_1000) / 1000, 2)   as avg_annual_price_mdkk,
+        sum(sales_count)                            as annual_sales_count
 
     from {{ ref('src_price_regional') }}
     where avg_price_dkk_1000 is not null
@@ -66,19 +68,19 @@ joined as (
         l.total_gross_unemployment,
         round(l.avg_disposable_income_dkk, 0)   as avg_disposable_income_dkk,
         l.municipality_count,
-        rp.avg_annual_price_dkk_1000,
+        rp.avg_annual_price_mdkk,
         rp.annual_sales_count,
 
-        -- Price-to-income ratio: average property price vs average disposable income
-        -- avg_annual_price_dkk_1000 is in DKK thousands → multiply by 1000
+        -- Price-to-income ratio: avg property price vs avg disposable income
+        -- avg_annual_price_mdkk is in DKK millions → multiply by 1,000,000
         case
             when l.avg_disposable_income_dkk > 0
-                and rp.avg_annual_price_dkk_1000 is not null
+                and rp.avg_annual_price_mdkk is not null
             then round(
-                (rp.avg_annual_price_dkk_1000 * 1000) / l.avg_disposable_income_dkk,
+                (rp.avg_annual_price_mdkk * 1000000) / l.avg_disposable_income_dkk,
                 2
             )
-        end                         as price_to_income_ratio
+        end                                         as price_to_income_ratio
 
     from housing h
     left join labour l
