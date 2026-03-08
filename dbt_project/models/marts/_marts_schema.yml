@@ -11,6 +11,11 @@ models:
         tests: [not_null]
       - name: period_year
         tests: [not_null]
+      - name: avg_annual_price_mdkk
+        description: >
+          Average property price in DKK millions (one-family houses).
+          Converted from EJ131 source unit (DKK thousands) for readability.
+          e.g. 2.46 = 2,460,000 DKK.
       - name: price_to_income_ratio
         description: Average property price (DKK) as a multiple of average disposable income.
 
