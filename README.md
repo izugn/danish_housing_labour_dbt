@@ -80,3 +80,19 @@ danish_housing_labour/
 **DST null sentinels:** The DST API returns `..` for suppressed values and `:` for unavailable values. These are replaced with `NULL` during ingestion in `fetch.py` before loading to Snowflake.
 
 **Incremental strategy:** Both core fact tables use `unique_key` + `_loaded_at` watermark for incremental loads. Run `dbt run --full-refresh` to rebuild from scratch.
+
+---
+
+## Caveats
+
+### Mean vs. Median Income in Price-to-Income Ratio
+
+The `price_to_income_ratio` metric in `mart_housing_affordability` uses **mean** disposable income sourced from DST table INDKP101, not median. This is a known limitation worth understanding:
+
+**Why median would be preferred:** Income distributions are right-skewed — a small number of very high earners pull the mean upward, while the majority of people sit below it. In high-income municipalities like Gentofte, the mean disposable income can be substantially higher than what the typical resident actually earns. Because the mean overstates purchasing power, the price-to-income ratio correspondingly *understates* unaffordability — it looks like people can afford more than they actually can. Median is the standard measure used in affordability research for exactly this reason; the internationally recognised **median multiple** (median house price ÷ median household income) is the benchmark used by the UN, OECD, and most academic housing studies.
+
+**Why mean is used here:** DST's StatBank API does not publish median disposable income at municipality level through INDKP101. Percentile distributions (P10, P25, P50/median, P75, P90) exist in tables such as INDKP105, but municipality-level granularity and coverage are inconsistent. Mean income by municipality is the finest-grained, consistently available series from DST.
+
+**Why regional comparisons remain valid:** Because the mean overstates purchasing power uniformly across all municipalities, the directional bias is consistent across regions. Region Hovedstaden will still appear less affordable than Region Nordjylland — just slightly less dramatically than a median-based ratio would show. The *ranking* of regions holds even if the *absolute values* are mildly optimistic. This makes the metric defensible for comparative analysis while acknowledging it is not a precise affordability measure for any single region in isolation.
+
+**Future improvement:** Replace mean income with median income (P50) once a suitable municipality-level DST series is confirmed, or aggregate from INDKP105 if granularity is sufficient.
