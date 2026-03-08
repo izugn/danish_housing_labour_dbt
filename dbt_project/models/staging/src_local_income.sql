@@ -22,6 +22,16 @@ with source as (
 -- ENHED = "Average income for all people (DKK)" gives the per-person average.
 -- INDKOMSTTYPE = "1 Disposable income (2+30-31-32-35)" is the standard net income measure.
 -- This produces one row per (municipality × year).
+
+-- NOTE: Uses arithmetic mean disposable income (INDKP101).
+-- Mean is sensitive to high-income outliers and will overstate
+-- typical purchasing power in municipalities with high income inequality
+-- (e.g. Gentofte, Rudersdal). Median would be preferable but is not
+-- available at municipality level in the DST StatBank API.
+-- Price-to-income ratios should be interpreted as a lower-bound estimate
+-- of unaffordability.
+
+
 disposable_avg as (
 
     select * from source
