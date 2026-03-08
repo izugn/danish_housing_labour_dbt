@@ -10,8 +10,8 @@ with housing as (
         period_year,
 
         -- Annual averages from quarterly data
-        avg(price_index)        as avg_annual_price_index,
-        avg(pct_change_yoy)     as avg_yoy_price_change_pct,
+        round(avg(price_index), 1)        as avg_annual_price_index,
+        round(avg(pct_change_yoy), 2)     as avg_yoy_price_change_pct,
         count(*)                as quarters_with_data
 
     from {{ ref('fct_housing_prices') }}
@@ -43,7 +43,7 @@ regional_prices as (
     select
         region_name,
         period_year,
-        avg(avg_price_dkk_1000)     as avg_annual_price_dkk_1000,
+        round(avg(avg_price_dkk_1000), 1)   as avg_annual_price_dkk_1000,
         sum(sales_count)            as annual_sales_count
 
     from {{ ref('src_price_regional') }}
@@ -64,7 +64,7 @@ joined as (
         h.avg_yoy_price_change_pct,
         h.quarters_with_data,
         l.total_gross_unemployment,
-        l.avg_disposable_income_dkk,
+        round(l.avg_disposable_income_dkk, 0)   as avg_disposable_income_dkk,
         l.municipality_count,
         rp.avg_annual_price_dkk_1000,
         rp.annual_sales_count,
