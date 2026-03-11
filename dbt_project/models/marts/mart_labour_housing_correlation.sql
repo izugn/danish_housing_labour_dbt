@@ -13,7 +13,7 @@ with_affordability_tier as (
         total_gross_unemployment,
         avg_disposable_income_dkk,
         municipality_count,
-        avg_annual_price_dkk_1000,
+        avg_annual_price_mdkk,
         annual_sales_count,
         price_to_income_ratio,
         case
