@@ -137,10 +137,10 @@ Snowflake connection uses key-pair authentication. Set the following environment
 (or let `profiles.yml` fall back to its defaults for local dev):
 
 ```bash
-export SNOWFLAKE_ACCOUNT="uwdxrei-kb45424"
-export SNOWFLAKE_USER="IZUGN4DBT"
-export SNOWFLAKE_PRIVATE_KEY_PATH="$HOME/.snowflake/rsa_key.p8"
-export SNOWFLAKE_PRIVATE_KEY_PASSPHRASE="<your-passphrase>"
+export SNOWFLAKE_ACCOUNT="<snowflake_account>"
+export SNOWFLAKE_USER="<snowflake_user>"
+export SNOWFLAKE_PRIVATE_KEY_PATH="<path_to_rsa_key.p8>"
+export SNOWFLAKE_PRIVATE_KEY_PASSPHRASE="<passphrase>"
 export SNOWFLAKE_ROLE="TRANSFORMER"
 export SNOWFLAKE_DATABASE="DANISH_HOUSING"
 export SNOWFLAKE_WAREHOUSE="COMPUTE_WH"
