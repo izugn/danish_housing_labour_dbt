@@ -133,8 +133,7 @@ For Dagster Cloud deployment see `orchestration/README.md`.
 
 ## Authentication
 
-Snowflake connection uses key-pair authentication. Set the following environment variables
-(or let `profiles.yml` fall back to its defaults for local dev):
+Snowflake connection uses key-pair authentication. See the example below. 
 
 ```bash
 export SNOWFLAKE_ACCOUNT="<snowflake_account>"
@@ -145,8 +144,6 @@ export SNOWFLAKE_ROLE="TRANSFORMER"
 export SNOWFLAKE_DATABASE="DANISH_HOUSING"
 export SNOWFLAKE_WAREHOUSE="COMPUTE_WH"
 ```
-
-> **Security:** `profiles.yml` is gitignored. Never commit credentials.
 
 ---
 
