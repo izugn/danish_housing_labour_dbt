@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "danish_housing_labour_orchestration"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "dagster>=1.7.0",
+    "dagster-dbt>=0.23.0",
+    "dagster-cloud>=1.7.0",
+    "dbt-snowflake>=1.7.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["danish_housing_labour*"]
+
+[tool.dagster]
+module_name = "danish_housing_labour"
