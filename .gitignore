@@ -20,6 +20,9 @@ dbt.log
 logs/
 .user.yml
 
+# dagster
+orchestration/.dagster_token
+
 # Snowflake private key
 *.p8
 
