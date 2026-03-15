@@ -1,0 +1,7 @@
+locations:
+  - location_name: danish_housing_labour
+    code_source:
+      package_name: danish_housing_labour
+    build:
+      directory: .
+    working_directory: .
