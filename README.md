@@ -19,6 +19,8 @@ transforms it with dbt Core, and orchestrates everything with Dagster.
 | Orchestration | Dagster Cloud (hybrid: cloud UI + local agent) |
 | BI | Preset (preset.io), read-only `PRESET_READER` role |
 
+![ELT Pipeline](images/Danish_Housing_dbt_ELT_pipeline.png)
+
 ---
 
 ## Project Structure
@@ -75,6 +77,8 @@ danish_housing_labour/
 | `mart_housing_affordability` | Marts | View | Price index + income + price-to-income ratio |
 | `mart_labour_housing_correlation` | Marts | View | Adds `affordability_tier`, data quality flags |
 
+![dbt Lineage Graph](images/lineage_graph.png)
+
 ### Snowflake Schema Names
 
 With `schema: dbt_dev` set in `profiles.yml`, dbt prefixes all custom schemas:
@@ -117,6 +121,8 @@ dbt build          # run + test all 10 models
 dbt docs generate
 dbt docs serve
 ```
+
+![dbt Docs](images/dbt_docs_danish_housing.png)
 
 ### 3 — Orchestration (Dagster)
 
