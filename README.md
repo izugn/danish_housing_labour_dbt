@@ -168,7 +168,7 @@ export SNOWFLAKE_WAREHOUSE="COMPUTE_WH"
 
 ## Dashboard
 
-The marts layer is visualised in [Preset](https://preset.io) (Apache Superset SaaS) using a dedicated read-only `PRESET_READER` role.
+The marts layer is visualised in [Preset](https://preset.io) using a dedicated read-only `PRESET_READER` role.
 
 ![Preset Analytics Dashboard](images/Danish_Housing_Analyticsdashboard.png)
 
