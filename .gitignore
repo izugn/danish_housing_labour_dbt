@@ -19,6 +19,7 @@ dbt_packages/
 dbt.log
 logs/
 .user.yml
+dbt_project/profiles.yml
 
 # dagster
 orchestration/.dagster_token

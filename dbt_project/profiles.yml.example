@@ -1,0 +1,28 @@
+danish_housing_labour:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account:   "{{ env_var('SNOWFLAKE_ACCOUNT', 'your-snowflake-account') }}"
+      user:      "{{ env_var('SNOWFLAKE_USER', 'YOUR_USERNAME') }}"
+      private_key_path:       "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH', '/path/to/.snowflake/rsa_key.p8') }}"
+      private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', 'your-passphrase') }}"
+      role:      "{{ env_var('SNOWFLAKE_ROLE', 'YOUR_ROLE') }}"
+      database:  "{{ env_var('SNOWFLAKE_DATABASE', 'YOUR_DATABASE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
+      schema: dbt_dev
+      threads: 4
+      client_session_keep_alive: false
+
+    prod:
+      type: snowflake
+      account:   "{{ env_var('SNOWFLAKE_ACCOUNT', 'your-snowflake-account') }}"
+      user:      "{{ env_var('SNOWFLAKE_USER', 'YOUR_USERNAME') }}"
+      private_key_path:       "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH', '/path/to/.snowflake/rsa_key.p8') }}"
+      private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', 'your-passphrase') }}"
+      role:      "{{ env_var('SNOWFLAKE_ROLE', 'YOUR_ROLE') }}"
+      database:  "{{ env_var('SNOWFLAKE_DATABASE', 'YOUR_DATABASE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
+      schema: analytics
+      threads: 8
+      client_session_keep_alive: false
