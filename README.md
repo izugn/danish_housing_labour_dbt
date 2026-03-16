@@ -179,7 +179,7 @@ export SNOWFLAKE_WAREHOUSE="COMPUTE_WH"
   Owner-occupied flats and weekend cottages are excluded. This means results
   reflect the detached and semi-detached house market and may not represent
   affordability dynamics in urban areas where flat ownership dominates
-  (notably Region Hovedstaden).
+  (notably in the capitol).
 - **DST null sentinels.** DST encodes suppressed values as `".."` and missing as `":"`.
   These are converted to SQL `NULL` during ingestion.
 - **Income data lag.** INDKP101 is typically published with a ~2 year lag (e.g. 2023
