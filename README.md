@@ -174,6 +174,12 @@ export SNOWFLAKE_WAREHOUSE="COMPUTE_WH"
 - **Region-level housing only.** EJ56 and EJ131 provide data at region level (5 regions),
   not municipality level. Municipality-level price analysis was not possible with current
   active DST tables.
+- **One-family houses only.** All housing price analysis is filtered to
+  `EJENDOMSKATE = 'One-family houses'` across EJ56, EJ131, and LABY22.
+  Owner-occupied flats and weekend cottages are excluded. This means results
+  reflect the detached and semi-detached house market and may not represent
+  affordability dynamics in urban areas where flat ownership dominates
+  (notably Region Hovedstaden).
 - **DST null sentinels.** DST encodes suppressed values as `".."` and missing as `":"`.
   These are converted to SQL `NULL` during ingestion.
 - **Income data lag.** INDKP101 is typically published with a ~2 year lag (e.g. 2023
