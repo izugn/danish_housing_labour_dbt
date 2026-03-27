@@ -9,13 +9,25 @@ transforms it with dbt Core, and orchestrates everything with Dagster.
 
 ---
 
+## 📚 Live dbt Documentation
+
+The full dbt lineage graph, model descriptions, column-level documentation, 
+and test coverage are published as a live static site:
+
+👉 **[View dbt Docs](http://danish-housing-dbt-docs-148852036347-eu-north-1-an.s3-website.eu-north-1.amazonaws.com)**
+
+Hosted on AWS S3 static website hosting (eu-north-1). Re-generated with 
+`dbt docs generate` and redeployed via `aws s3 sync` after each pipeline update.
+
+---
+
 ## Stack
 
 | Layer | Tool |
 |---|---|
 | Ingestion | Python (`fetch_dst_tables.py`) → Snowflake RAW schema |
 | Warehouse | Snowflake (key-pair auth) |
-| Transformation | dbt Core 1.x |
+| Transformation | dbt Core 1.10 |
 | Orchestration | Dagster Cloud (hybrid: cloud UI + local agent) |
 | BI | Preset (preset.io), read-only `PRESET_READER` role |
 
@@ -26,7 +38,7 @@ transforms it with dbt Core, and orchestrates everything with Dagster.
 ## Project Structure
 
 ```
-danish_housing_labour/
+danish_housing_labour_dbt/
 ├── ingestion/                  # Python: DST StatBank API → Snowflake RAW
 │   ├── fetch_dst_tables.py     # POST-based DST API fetch with retry logic
 │   └── requirements.txt
